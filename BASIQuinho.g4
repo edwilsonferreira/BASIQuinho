@@ -1,7 +1,9 @@
 grammar BASIQuinho;
 
 // Ponto de entrada da gramática
-prog: stmt+ EOF;
+// Permite NEWLINEs opcionais no início, entre statements, e no final.
+// Requer pelo menos um statement real devido ao '+' em (NEWLINE* stmt)+.
+prog: (NEWLINE* stmt)+ NEWLINE* EOF;
 
 // Declarações (comandos)
 stmt: inputStmt  # InputStatement
@@ -10,24 +12,31 @@ stmt: inputStmt  # InputStatement
     ;
 
 // Comando INPUT (Simplificado)
+// Ex: INPUT idadeVar
 inputStmt: INPUT ID NEWLINE;
 
 // Comando PRINT
+// Ex: PRINT "Olá, ", nomeVar, "!"
+// Ex: PRINT "O resultado é:", resultado
+// Ex: PRINT valor
 printStmt: PRINT exprList NEWLINE;
 
 // Comando LET (atribuição)
+// Ex: LET a = 10
+// Ex: LET nome = "Fulano"
+// Ex: LET resultado = a + b * 2
 letStmt: LET ID '=' expr NEWLINE;
 
 // Lista de expressões para o PRINT
 exprList: expr (',' expr)*;
 
-// Expressões (SEM LABELS #AddSub, #JustTerm)
+// Expressões (sem labels problemáticas como #AddSub ou #JustTerm aqui)
 expr: term (('+' | '-') term)* ;
 
-// Termos (SEM LABELS #MulDiv, #JustFactor)
+// Termos (sem labels problemáticas como #MulDiv ou #JustFactor aqui)
 term: factor (('*' | '/') factor)* ;
 
-// Fatores (Labels aqui estão OK e são a melhor prática)
+// Fatores (Labels aqui estão OK e são a melhor prática para alternativas)
 factor: NUMBER                     # Number
       | STRING                     # String
       | ID                         # Variable

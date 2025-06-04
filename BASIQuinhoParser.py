@@ -1,4 +1,4 @@
-# Generated from ./BASIQuinho.g4 by ANTLR 4.13.2
+# Generated from BASIQuinho.g4 by ANTLR 4.13.2
 # encoding: utf-8
 from antlr4 import *
 from io import StringIO
@@ -10,30 +10,34 @@ else:
 
 def serializedATN():
     return [
-        4,1,16,78,2,0,7,0,2,1,7,1,2,2,7,2,2,3,7,3,2,4,7,4,2,5,7,5,2,6,7,
-        6,2,7,7,7,2,8,7,8,1,0,4,0,20,8,0,11,0,12,0,21,1,0,1,0,1,1,1,1,1,
-        1,3,1,29,8,1,1,2,1,2,1,2,1,2,1,3,1,3,1,3,1,3,1,4,1,4,1,4,1,4,1,4,
-        1,4,1,5,1,5,1,5,5,5,48,8,5,10,5,12,5,51,9,5,1,6,1,6,1,6,5,6,56,8,
-        6,10,6,12,6,59,9,6,1,7,1,7,1,7,5,7,64,8,7,10,7,12,7,67,9,7,1,8,1,
-        8,1,8,1,8,1,8,1,8,1,8,3,8,76,8,8,1,8,0,0,9,0,2,4,6,8,10,12,14,16,
-        0,2,1,0,3,4,1,0,5,6,77,0,19,1,0,0,0,2,28,1,0,0,0,4,30,1,0,0,0,6,
-        34,1,0,0,0,8,38,1,0,0,0,10,44,1,0,0,0,12,52,1,0,0,0,14,60,1,0,0,
-        0,16,75,1,0,0,0,18,20,3,2,1,0,19,18,1,0,0,0,20,21,1,0,0,0,21,19,
-        1,0,0,0,21,22,1,0,0,0,22,23,1,0,0,0,23,24,5,0,0,1,24,1,1,0,0,0,25,
-        29,3,4,2,0,26,29,3,6,3,0,27,29,3,8,4,0,28,25,1,0,0,0,28,26,1,0,0,
-        0,28,27,1,0,0,0,29,3,1,0,0,0,30,31,5,9,0,0,31,32,5,12,0,0,32,33,
-        5,15,0,0,33,5,1,0,0,0,34,35,5,10,0,0,35,36,3,10,5,0,36,37,5,15,0,
-        0,37,7,1,0,0,0,38,39,5,11,0,0,39,40,5,12,0,0,40,41,5,1,0,0,41,42,
-        3,12,6,0,42,43,5,15,0,0,43,9,1,0,0,0,44,49,3,12,6,0,45,46,5,2,0,
-        0,46,48,3,12,6,0,47,45,1,0,0,0,48,51,1,0,0,0,49,47,1,0,0,0,49,50,
-        1,0,0,0,50,11,1,0,0,0,51,49,1,0,0,0,52,57,3,14,7,0,53,54,7,0,0,0,
-        54,56,3,14,7,0,55,53,1,0,0,0,56,59,1,0,0,0,57,55,1,0,0,0,57,58,1,
-        0,0,0,58,13,1,0,0,0,59,57,1,0,0,0,60,65,3,16,8,0,61,62,7,1,0,0,62,
-        64,3,16,8,0,63,61,1,0,0,0,64,67,1,0,0,0,65,63,1,0,0,0,65,66,1,0,
-        0,0,66,15,1,0,0,0,67,65,1,0,0,0,68,76,5,13,0,0,69,76,5,14,0,0,70,
-        76,5,12,0,0,71,72,5,7,0,0,72,73,3,12,6,0,73,74,5,8,0,0,74,76,1,0,
-        0,0,75,68,1,0,0,0,75,69,1,0,0,0,75,70,1,0,0,0,75,71,1,0,0,0,76,17,
-        1,0,0,0,6,21,28,49,57,65,75
+        4,1,16,90,2,0,7,0,2,1,7,1,2,2,7,2,2,3,7,3,2,4,7,4,2,5,7,5,2,6,7,
+        6,2,7,7,7,2,8,7,8,1,0,5,0,20,8,0,10,0,12,0,23,9,0,1,0,4,0,26,8,0,
+        11,0,12,0,27,1,0,5,0,31,8,0,10,0,12,0,34,9,0,1,0,1,0,1,1,1,1,1,1,
+        3,1,41,8,1,1,2,1,2,1,2,1,2,1,3,1,3,1,3,1,3,1,4,1,4,1,4,1,4,1,4,1,
+        4,1,5,1,5,1,5,5,5,60,8,5,10,5,12,5,63,9,5,1,6,1,6,1,6,5,6,68,8,6,
+        10,6,12,6,71,9,6,1,7,1,7,1,7,5,7,76,8,7,10,7,12,7,79,9,7,1,8,1,8,
+        1,8,1,8,1,8,1,8,1,8,3,8,88,8,8,1,8,0,0,9,0,2,4,6,8,10,12,14,16,0,
+        2,1,0,3,4,1,0,5,6,91,0,25,1,0,0,0,2,40,1,0,0,0,4,42,1,0,0,0,6,46,
+        1,0,0,0,8,50,1,0,0,0,10,56,1,0,0,0,12,64,1,0,0,0,14,72,1,0,0,0,16,
+        87,1,0,0,0,18,20,5,15,0,0,19,18,1,0,0,0,20,23,1,0,0,0,21,19,1,0,
+        0,0,21,22,1,0,0,0,22,24,1,0,0,0,23,21,1,0,0,0,24,26,3,2,1,0,25,21,
+        1,0,0,0,26,27,1,0,0,0,27,25,1,0,0,0,27,28,1,0,0,0,28,32,1,0,0,0,
+        29,31,5,15,0,0,30,29,1,0,0,0,31,34,1,0,0,0,32,30,1,0,0,0,32,33,1,
+        0,0,0,33,35,1,0,0,0,34,32,1,0,0,0,35,36,5,0,0,1,36,1,1,0,0,0,37,
+        41,3,4,2,0,38,41,3,6,3,0,39,41,3,8,4,0,40,37,1,0,0,0,40,38,1,0,0,
+        0,40,39,1,0,0,0,41,3,1,0,0,0,42,43,5,9,0,0,43,44,5,12,0,0,44,45,
+        5,15,0,0,45,5,1,0,0,0,46,47,5,10,0,0,47,48,3,10,5,0,48,49,5,15,0,
+        0,49,7,1,0,0,0,50,51,5,11,0,0,51,52,5,12,0,0,52,53,5,1,0,0,53,54,
+        3,12,6,0,54,55,5,15,0,0,55,9,1,0,0,0,56,61,3,12,6,0,57,58,5,2,0,
+        0,58,60,3,12,6,0,59,57,1,0,0,0,60,63,1,0,0,0,61,59,1,0,0,0,61,62,
+        1,0,0,0,62,11,1,0,0,0,63,61,1,0,0,0,64,69,3,14,7,0,65,66,7,0,0,0,
+        66,68,3,14,7,0,67,65,1,0,0,0,68,71,1,0,0,0,69,67,1,0,0,0,69,70,1,
+        0,0,0,70,13,1,0,0,0,71,69,1,0,0,0,72,77,3,16,8,0,73,74,7,1,0,0,74,
+        76,3,16,8,0,75,73,1,0,0,0,76,79,1,0,0,0,77,75,1,0,0,0,77,78,1,0,
+        0,0,78,15,1,0,0,0,79,77,1,0,0,0,80,88,5,13,0,0,81,88,5,14,0,0,82,
+        88,5,12,0,0,83,84,5,7,0,0,84,85,3,12,6,0,85,86,5,8,0,0,86,88,1,0,
+        0,0,87,80,1,0,0,0,87,81,1,0,0,0,87,82,1,0,0,0,87,83,1,0,0,0,88,17,
+        1,0,0,0,8,21,27,32,40,61,69,77,87
     ]
 
 class BASIQuinhoParser ( Parser ):
@@ -111,6 +115,12 @@ class BASIQuinhoParser ( Parser ):
                 return self.getTypedRuleContext(BASIQuinhoParser.StmtContext,i)
 
 
+        def NEWLINE(self, i:int=None):
+            if i is None:
+                return self.getTokens(BASIQuinhoParser.NEWLINE)
+            else:
+                return self.getToken(BASIQuinhoParser.NEWLINE, i)
+
         def getRuleIndex(self):
             return BASIQuinhoParser.RULE_prog
 
@@ -132,19 +142,41 @@ class BASIQuinhoParser ( Parser ):
         self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 19 
+            self.state = 25 
+            self._errHandler.sync(self)
+            _alt = 1
+            while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
+                if _alt == 1:
+                    self.state = 21
+                    self._errHandler.sync(self)
+                    _la = self._input.LA(1)
+                    while _la==15:
+                        self.state = 18
+                        self.match(BASIQuinhoParser.NEWLINE)
+                        self.state = 23
+                        self._errHandler.sync(self)
+                        _la = self._input.LA(1)
+
+                    self.state = 24
+                    self.stmt()
+
+                else:
+                    raise NoViableAltException(self)
+                self.state = 27 
+                self._errHandler.sync(self)
+                _alt = self._interp.adaptivePredict(self._input,1,self._ctx)
+
+            self.state = 32
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while True:
-                self.state = 18
-                self.stmt()
-                self.state = 21 
+            while _la==15:
+                self.state = 29
+                self.match(BASIQuinhoParser.NEWLINE)
+                self.state = 34
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if not ((((_la) & ~0x3f) == 0 and ((1 << _la) & 3584) != 0)):
-                    break
 
-            self.state = 23
+            self.state = 35
             self.match(BASIQuinhoParser.EOF)
         except RecognitionException as re:
             localctx.exception = re
@@ -235,25 +267,25 @@ class BASIQuinhoParser ( Parser ):
         localctx = BASIQuinhoParser.StmtContext(self, self._ctx, self.state)
         self.enterRule(localctx, 2, self.RULE_stmt)
         try:
-            self.state = 28
+            self.state = 40
             self._errHandler.sync(self)
             token = self._input.LA(1)
             if token in [9]:
                 localctx = BASIQuinhoParser.InputStatementContext(self, localctx)
                 self.enterOuterAlt(localctx, 1)
-                self.state = 25
+                self.state = 37
                 self.inputStmt()
                 pass
             elif token in [10]:
                 localctx = BASIQuinhoParser.PrintStatementContext(self, localctx)
                 self.enterOuterAlt(localctx, 2)
-                self.state = 26
+                self.state = 38
                 self.printStmt()
                 pass
             elif token in [11]:
                 localctx = BASIQuinhoParser.LetStatementContext(self, localctx)
                 self.enterOuterAlt(localctx, 3)
-                self.state = 27
+                self.state = 39
                 self.letStmt()
                 pass
             else:
@@ -304,11 +336,11 @@ class BASIQuinhoParser ( Parser ):
         self.enterRule(localctx, 4, self.RULE_inputStmt)
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 30
+            self.state = 42
             self.match(BASIQuinhoParser.INPUT)
-            self.state = 31
+            self.state = 43
             self.match(BASIQuinhoParser.ID)
-            self.state = 32
+            self.state = 44
             self.match(BASIQuinhoParser.NEWLINE)
         except RecognitionException as re:
             localctx.exception = re
@@ -356,11 +388,11 @@ class BASIQuinhoParser ( Parser ):
         self.enterRule(localctx, 6, self.RULE_printStmt)
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 34
+            self.state = 46
             self.match(BASIQuinhoParser.PRINT)
-            self.state = 35
+            self.state = 47
             self.exprList()
-            self.state = 36
+            self.state = 48
             self.match(BASIQuinhoParser.NEWLINE)
         except RecognitionException as re:
             localctx.exception = re
@@ -411,15 +443,15 @@ class BASIQuinhoParser ( Parser ):
         self.enterRule(localctx, 8, self.RULE_letStmt)
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 38
+            self.state = 50
             self.match(BASIQuinhoParser.LET)
-            self.state = 39
+            self.state = 51
             self.match(BASIQuinhoParser.ID)
-            self.state = 40
+            self.state = 52
             self.match(BASIQuinhoParser.T__0)
-            self.state = 41
+            self.state = 53
             self.expr()
-            self.state = 42
+            self.state = 54
             self.match(BASIQuinhoParser.NEWLINE)
         except RecognitionException as re:
             localctx.exception = re
@@ -465,17 +497,17 @@ class BASIQuinhoParser ( Parser ):
         self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 44
+            self.state = 56
             self.expr()
-            self.state = 49
+            self.state = 61
             self._errHandler.sync(self)
             _la = self._input.LA(1)
             while _la==2:
-                self.state = 45
+                self.state = 57
                 self.match(BASIQuinhoParser.T__1)
-                self.state = 46
+                self.state = 58
                 self.expr()
-                self.state = 51
+                self.state = 63
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
 
@@ -523,22 +555,22 @@ class BASIQuinhoParser ( Parser ):
         self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 52
+            self.state = 64
             self.term()
-            self.state = 57
+            self.state = 69
             self._errHandler.sync(self)
             _la = self._input.LA(1)
             while _la==3 or _la==4:
-                self.state = 53
+                self.state = 65
                 _la = self._input.LA(1)
                 if not(_la==3 or _la==4):
                     self._errHandler.recoverInline(self)
                 else:
                     self._errHandler.reportMatch(self)
                     self.consume()
-                self.state = 54
+                self.state = 66
                 self.term()
-                self.state = 59
+                self.state = 71
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
 
@@ -586,22 +618,22 @@ class BASIQuinhoParser ( Parser ):
         self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 60
+            self.state = 72
             self.factor()
-            self.state = 65
+            self.state = 77
             self._errHandler.sync(self)
             _la = self._input.LA(1)
             while _la==5 or _la==6:
-                self.state = 61
+                self.state = 73
                 _la = self._input.LA(1)
                 if not(_la==5 or _la==6):
                     self._errHandler.recoverInline(self)
                 else:
                     self._errHandler.reportMatch(self)
                     self.consume()
-                self.state = 62
+                self.state = 74
                 self.factor()
-                self.state = 67
+                self.state = 79
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
 
@@ -710,35 +742,35 @@ class BASIQuinhoParser ( Parser ):
         localctx = BASIQuinhoParser.FactorContext(self, self._ctx, self.state)
         self.enterRule(localctx, 16, self.RULE_factor)
         try:
-            self.state = 75
+            self.state = 87
             self._errHandler.sync(self)
             token = self._input.LA(1)
             if token in [13]:
                 localctx = BASIQuinhoParser.NumberContext(self, localctx)
                 self.enterOuterAlt(localctx, 1)
-                self.state = 68
+                self.state = 80
                 self.match(BASIQuinhoParser.NUMBER)
                 pass
             elif token in [14]:
                 localctx = BASIQuinhoParser.StringContext(self, localctx)
                 self.enterOuterAlt(localctx, 2)
-                self.state = 69
+                self.state = 81
                 self.match(BASIQuinhoParser.STRING)
                 pass
             elif token in [12]:
                 localctx = BASIQuinhoParser.VariableContext(self, localctx)
                 self.enterOuterAlt(localctx, 3)
-                self.state = 70
+                self.state = 82
                 self.match(BASIQuinhoParser.ID)
                 pass
             elif token in [7]:
                 localctx = BASIQuinhoParser.ParenthesesContext(self, localctx)
                 self.enterOuterAlt(localctx, 4)
-                self.state = 71
+                self.state = 83
                 self.match(BASIQuinhoParser.T__6)
-                self.state = 72
+                self.state = 84
                 self.expr()
-                self.state = 73
+                self.state = 85
                 self.match(BASIQuinhoParser.T__7)
                 pass
             else:
