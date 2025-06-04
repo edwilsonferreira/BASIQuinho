@@ -1,191 +1,252 @@
 # geracao_llvm.py
 import logging
 from erro import Erro
+import re
+import datetime # Importação adicionada
 
 class GeracaoLLVM:
     def __init__(self, erro_handler: Erro):
         self.erro_handler = erro_handler
         self.logger = logging.getLogger(self.__class__.__name__)
         self.codigo_llvm_linhas = []
-        self.reg_count = 0 # Contador para registradores virtuais LLVM (%0, %1, ...)
-        self.var_map = {}  # Mapeia nomes de variáveis BASIQuinho para seus ponteiros na stack LLVM
-        self.global_str_count = 0 # Contador para strings globais (para PRINT)
+        self.main_body_instructions = [] 
+        self.global_definitions = []   
+        self.reg_count = 0
+        self.var_map = {}  
+        self.global_str_count = 0
 
+    # ... (métodos _nova_reg, _sanitize_llvm_name, _get_var_ptr, _nova_global_string_const, _load_operand como antes) ...
     def _nova_reg(self) -> str:
         reg = f"%r{self.reg_count}"
         self.reg_count += 1
         return reg
 
-    def _nova_label_str(self, text_content: str) -> str:
-        label = f"@.str.{self.global_str_count}"
+    def _sanitize_llvm_name(self, name: str) -> str:
+        sanitized = re.sub(r'[^a-zA-Z0-9$._]', '_', name)
+        if not sanitized or not (sanitized[0].isalpha() or sanitized[0] in ['$', '.', '_']):
+            sanitized = "v_" + sanitized
+        return sanitized
+
+    def _get_var_ptr(self, var_name_basiquinho: str) -> str:
+        if var_name_basiquinho not in self.var_map:
+            llvm_var_name_clean = self._sanitize_llvm_name(var_name_basiquinho)
+            ptr_reg = f"%ptr.{llvm_var_name_clean}"
+            self.var_map[var_name_basiquinho] = ptr_reg
+            self.main_body_instructions.insert(0, f"  {ptr_reg} = alloca i32, align 4 ; Var {var_name_basiquinho}")
+        return self.var_map[var_name_basiquinho]
+
+    def _nova_global_string_const(self, text_content: str) -> str:
+        str_label = f"@.str.const.{self.global_str_count}"
         self.global_str_count += 1
-        # Escapa caracteres especiais para strings LLVM se necessário
-        # Conteúdo C string (com null terminator): "conteudo\00"
-        # Tamanho: len(text_content) + 1
-        # Ex: @.str.0 = private unnamed_addr constant [14 x i8] c"Hello, World!\0A\00"
-        # Por simplicidade, vamos assumir que o TAC nos dá strings "limpas"
-        llvm_str_decl = f"{label} = private unnamed_addr constant [{len(text_content) + 1} x i8] c\"{text_content}\\00\""
-        # Adiciona no início do código LLVM (depois de outros globals)
-        # Encontra o final das declarações globais e insere antes do primeiro 'define'
-        insert_pos = 0
-        for i, line in enumerate(self.codigo_llvm_linhas):
-            if line.strip().startswith("define i32 @main()"):
-                insert_pos = i
-                break
-        if insert_pos == 0 and len(self.codigo_llvm_linhas) > 0 : insert_pos = len(self.codigo_llvm_linhas) # Adiciona no fim se main não achado
-        elif insert_pos == 0 and len(self.codigo_llvm_linhas) == 0: self.codigo_llvm_linhas.append(llvm_str_decl) # Primeiro item
-        else: self.codigo_llvm_linhas.insert(insert_pos, llvm_str_decl)
+        
+        llvm_escaped_content = ""
+        for char_code in text_content.encode('utf-8'):
+            if 32 <= char_code <= 126 and chr(char_code) not in ['"', '\\']:
+                llvm_escaped_content += chr(char_code)
+            else: 
+                llvm_escaped_content += f"\\{char_code:02X}"
+        llvm_escaped_content += "\\00" 
 
-        return label
+        num_bytes = len(text_content.encode('utf-8')) + 1
 
+        llvm_str_decl = f'{str_label} = private unnamed_addr constant [{num_bytes} x i8] c"{llvm_escaped_content}"'
+        self.global_definitions.append(llvm_str_decl)
+        return str_label
 
-    def _get_var_ptr(self, var_name: str) -> str:
-        if var_name not in self.var_map:
-            # Aloca na entrada da função main
-            # A inserção deve ser cuidadosa para ser no local correto (entry block)
-            ptr_reg = f"%ptr.{var_name.replace('t', 'tmp')}" # Evita conflito com nomes de registradores temporários tX
-            self.var_map[var_name] = ptr_reg
-            
-            # Adiciona a instrução alloca no início do bloco 'entry:'
-            entry_block_start_idx = -1
-            for idx, line in enumerate(self.codigo_llvm_linhas):
-                if line.strip() == "entry:":
-                    entry_block_start_idx = idx + 1
-                    break
-            
-            if entry_block_start_idx != -1:
-                # Assume i32 para todos por simplicidade. BASIQuinho pode precisar de float (double) e strings.
-                self.codigo_llvm_linhas.insert(entry_block_start_idx, f"  {ptr_reg} = alloca i32, align 4 ; Var {var_name}")
-            else:
-                # Fallback se 'entry:' não for encontrado (improvável para main bem formada)
-                self.erro_handler.registrar_erro("Gerador LLVM",0,0,f"Bloco 'entry:' não encontrado para alocar variável '{var_name}'.","LLVM")
+    def _load_operand(self, operand_tac: str) -> tuple[str, str]:
+        if operand_tac.isdigit() or (operand_tac.startswith('-') and operand_tac[1:].isdigit()):
+            return "i32", operand_tac
+        
+        elif operand_tac.startswith('"') and operand_tac.endswith('"'): 
+            str_content = operand_tac[1:-1]
+            global_str_label = self._nova_global_string_const(str_content)
+            gep_reg = self._nova_reg()
+            num_bytes = len(str_content.encode('utf-8')) + 1
+            # Adiciona a instrução GEP ao corpo da main, pois ela gera um valor em tempo de execução (ponteiro)
+            self.main_body_instructions.append(f"  {gep_reg} = getelementptr inbounds [{num_bytes} x i8], ptr {global_str_label}, i64 0, i64 0")
+            return "ptr", gep_reg
 
-        return self.var_map[var_name]
-
-
-    def _load_operand(self, operand_tac: str) -> str:
-        """ Carrega um operando TAC para um registrador LLVM, retornando o nome do registrador."""
-        reg_val = self._nova_reg()
-        if operand_tac.isdigit() or (operand_tac.startswith('-') and operand_tac[1:].isdigit()): # É uma literal numérica
-            # LLVM usa o valor diretamente em muitas instruções, não precisa de load para i32 literal.
-            return operand_tac # Retorna a própria literal
-        elif operand_tac.startswith("t"): # É uma temporária do TAC (que já deve conter um valor, não um ponteiro)
-            # Assumindo que temporárias do TAC (t0, t1) já são valores (registradores virtuais)
-            # e não endereços de memória. Se tX representa um valor em um registrador LLVM %tX:
-            return f"%{operand_tac}" # ex: %t0 (se TAC t0 -> LLVM %t0)
-        else: # É uma variável de usuário
-            var_ptr = self._get_var_ptr(operand_tac)
-            self.codigo_llvm_linhas.append(f"  {reg_val} = load i32, ptr {var_ptr}, align 4")
-            return reg_val
-
+        elif operand_tac.startswith("t"): 
+            return "i32", f"%{operand_tac}" 
+        
+        else: 
+            var_ptr = self._get_var_ptr(operand_tac) 
+            loaded_val_reg = self._nova_reg()
+            self.main_body_instructions.append(f"  {loaded_val_reg} = load i32, ptr {var_ptr}, align 4")
+            return "i32", loaded_val_reg
 
     def gerarCodigoLLVM(self, codigo_tac: list):
         self.logger.info("Iniciando geração de Código LLVM IR...")
-        if not codigo_tac or self.erro_handler.houve_erro_fatal():
-            self.logger.error("Código TAC não fornecido ou erros anteriores impedem geração LLVM.")
+        if not codigo_tac and not self.erro_handler.houve_erro_fatal():
+             self.logger.info("Código TAC vazio, Geração LLVM produzirá corpo de main vazio.")
+        elif not codigo_tac and self.erro_handler.houve_erro_fatal(): 
+            self.logger.error("Código TAC não fornecido devido a erros anteriores, Geração LLVM não pode prosseguir.")
             return None
+        elif not codigo_tac : # Caso genérico de TAC vazio sem erro fatal prévio explícito (ex: programa fonte vazio)
+             self.logger.info("Código TAC vazio (programa fonte pode ser vazio). Geração LLVM produzirá corpo de main mínimo.")
 
-        self.codigo_llvm_linhas = [
-            "; Modulo BASIQuinho LLVM IR",
-            "target triple = \"x86_64-pc-linux-gnu\" ; Exemplo",
-            "",
-            "; Declaracoes de funcoes C externas para I/O",
-            "@.str.print.num.fmt = private unnamed_addr constant [4 x i8] c\"%d\\0A\\00\"", # Formato para PRINT numero
-            "@.str.print.str.fmt = private unnamed_addr constant [4 x i8] c\"%s\\0A\\00\"", # Formato para PRINT string
-            "@.str.scan.num.fmt = private unnamed_addr constant [3 x i8] c\"%d\\00\"",   # Formato para INPUT numero
-            "declare i32 @printf(ptr nocapture readonly, ...) nounwind",
-            "declare i32 @scanf(ptr nocapture readonly, ...) nounwind",
-            "",
-            "define i32 @main() {",
-            "entry:"
-            # As alocações de variáveis (alloca) serão inseridas aqui pelo _get_var_ptr
-        ]
+
+        self.main_body_instructions = []
+        self.global_definitions = []
         self.reg_count = 0
         self.var_map = {}
         self.global_str_count = 0
-
+        
         try:
+            # Processamento do TAC (como na versão anterior)
             for instrucao_tac in codigo_tac:
                 self.logger.debug(f"Processando TAC para LLVM: {instrucao_tac}")
-                partes = instrucao_tac.split(' ')
+                partes = []
+                # Parse robusto da instrução TAC
+                if instrucao_tac.startswith("PRINT "):
+                    partes = ["PRINT", instrucao_tac[len("PRINT "):].strip()]
+                elif " := " in instrucao_tac:
+                    destino, expressao = instrucao_tac.split(" := ", 1)
+                    partes = [destino.strip(), ":="] + [p.strip() for p in expressao.split(' ', 2)]
+                elif instrucao_tac.startswith("INPUT "):
+                    partes = ["INPUT", instrucao_tac[len("INPUT "):].strip()]
+                else:
+                    self.logger.error(f"Formato de instrução TAC não reconhecido: {instrucao_tac}")
+                    self.erro_handler.registrar_erro("Gerador LLVM",0,0,f"Formato TAC irreconhecível: {instrucao_tac}", "LLVM")
+                    continue
+                
                 comando_ou_destino = partes[0]
 
-                if comando_ou_destino == "INPUT": # INPUT var
-                    var_nome = partes[1]
-                    var_ptr = self._get_var_ptr(var_nome)
-                    self.codigo_llvm_linhas.append(f"  ; TAC: INPUT {var_nome}")
-                    scan_reg = self._nova_reg()
-                    self.codigo_llvm_linhas.append(f"  {scan_reg} = call i32 (ptr, ...) @scanf(ptr @.str.scan.num.fmt, ptr {var_ptr})")
+                if comando_ou_destino == "INPUT":
+                    var_nome_basiquinho = partes[1]
+                    var_ptr = self._get_var_ptr(var_nome_basiquinho)
+                    self.main_body_instructions.append(f"  ; TAC: INPUT {var_nome_basiquinho}")
+                    scan_call_reg = self._nova_reg()
+                    self.main_body_instructions.append(f"  {scan_call_reg} = call i32 (ptr, ...) @scanf(ptr @.str.scan.num.fmt, ptr {var_ptr})")
 
-                elif comando_ou_destino == "PRINT": # PRINT val
-                    val_tac = partes[1]
-                    self.codigo_llvm_linhas.append(f"  ; TAC: PRINT {val_tac}")
-                    
-                    if val_tac.startswith('"') and val_tac.endswith('"'): # É uma string literal
-                        str_content = val_tac[1:-1] # Remove aspas
-                        # \n, \t etc. dentro da string BASIQuinho precisariam ser traduzidos para sequências de escape LLVM/C
-                        str_label = self._nova_label_str(str_content + "\\0A") # Adiciona newline para PRINT
-                        # Precisa de GEP (GetElementPtr) para passar o ponteiro para array de char
-                        # Ex: %ptr_str = getelementptr inbounds [Tamanho x i8], [Tamanho x i8]* @.str.X, i64 0, i64 0
-                        # Tamanho = len(str_content) + 1 (para \0A) + 1 (para \00 final do C string)
-                        # Por simplicidade, se @printf aceita ptr para const char*, o label da string é suficiente
-                        # Mas o tipo de @.str.X precisa ser ptr
-                        # Vamos usar um formato de string para printf:
-                        gep_reg = self._nova_reg()
-                        self.codigo_llvm_linhas.append(f"  {gep_reg} = getelementptr inbounds [{len(str_content)+2} x i8], ptr {str_label}, i32 0, i32 0")
-                        print_reg = self._nova_reg()
-                        self.codigo_llvm_linhas.append(f"  {print_reg} = call i32 (ptr, ...) @printf(ptr @.str.print.str.fmt, ptr {gep_reg})")
+                elif comando_ou_destino == "PRINT":
+                    val_tac_print = partes[1]
+                    self.main_body_instructions.append(f"  ; TAC: PRINT {val_tac_print}")
+                    tipo_llvm_op, val_llvm_op = self._load_operand(val_tac_print)
+                    if tipo_llvm_op == "ptr":
+                        print_call_reg = self._nova_reg()
+                        self.main_body_instructions.append(f"  {print_call_reg} = call i32 (ptr, ...) @printf(ptr @.str.print.str.fmt, ptr {val_llvm_op})")
+                    elif tipo_llvm_op == "i32":
+                        print_call_reg = self._nova_reg()
+                        self.main_body_instructions.append(f"  {print_call_reg} = call i32 (ptr, ...) @printf(ptr @.str.print.num.fmt, i32 {val_llvm_op})")
+                    else:
+                        self.logger.error(f"Tipo de operando desconhecido para PRINT LLVM: {tipo_llvm_op} para valor '{val_tac_print}'")
+                        self.erro_handler.registrar_erro("Gerador LLVM",0,0,f"Tipo inválido para PRINT: {tipo_llvm_op}", "LLVM")
 
-                    else: # É uma variável, temporária ou literal numérica
-                        val_llvm = self._load_operand(val_tac) # Se for literal, retorna a própria literal. Se var/temp, carrega.
-                        print_reg = self._nova_reg()
-                        self.codigo_llvm_linhas.append(f"  {print_reg} = call i32 (ptr, ...) @printf(ptr @.str.print.num.fmt, i32 {val_llvm})")
-
-
-                elif len(partes) > 1 and partes[1] == ":=": # Atribuição: dest := ...
+                elif len(partes) > 1 and partes[1] == ":=": 
                     destino_tac = comando_ou_destino
-                    destino_ptr_llvm = self._get_var_ptr(destino_tac)
-                    self.codigo_llvm_linhas.append(f"  ; TAC: {instrucao_tac}")
-
-                    if len(partes) == 3: # Atribuição simples: dest := fonte
+                    self.main_body_instructions.append(f"  ; TAC: {instrucao_tac}")
+                    if len(partes) == 3: 
                         fonte_tac = partes[2]
-                        fonte_llvm_val = self._load_operand(fonte_tac) # Se for literal, retorna a própria literal
-                        self.codigo_llvm_linhas.append(f"  store i32 {fonte_llvm_val}, ptr {destino_ptr_llvm}, align 4")
-
-                    elif len(partes) == 5: # Operação: dest := op1 op_tac op2
-                        op1_tac, op_tac, op2_tac = partes[2], partes[3], partes[4]
-                        op1_llvm = self._load_operand(op1_tac)
-                        op2_llvm = self._load_operand(op2_tac)
-                        
-                        llvm_op_str = ""
-                        if op_tac == '+': llvm_op_str = "add nsw"
-                        elif op_tac == '-': llvm_op_str = "sub nsw"
-                        elif op_tac == '*': llvm_op_str = "mul nsw"
-                        elif op_tac == '/': llvm_op_str = "sdiv" # Divisão de inteiros com sinal
-                        else:
-                            self.erro_handler.registrar_erro("Gerador LLVM", 0, 0, f"Operador TAC '{op_tac}' não suportado.", "LLVM")
+                        tipo_llvm_fonte, val_llvm_fonte = self._load_operand(fonte_tac)
+                        if tipo_llvm_fonte != "i32":
+                            self.logger.error(f"Atribuição de tipo não-i32 ({tipo_llvm_fonte}) para variável/temporária i32 não suportada: {instrucao_tac}")
+                            self.erro_handler.registrar_erro("Gerador LLVM",0,0,f"Atribuição de tipo incompatível: {instrucao_tac}", "LLVM")
                             continue
-                        
-                        res_op_reg = self._nova_reg()
-                        self.codigo_llvm_linhas.append(f"  {res_op_reg} = {llvm_op_str} i32 {op1_llvm}, {op2_llvm}")
-                        self.codigo_llvm_linhas.append(f"  store i32 {res_op_reg}, ptr {destino_ptr_llvm}, align 4")
+                        if destino_tac.startswith("t"):
+                            self.main_body_instructions.append(f"  %{destino_tac} = add i32 {val_llvm_fonte}, 0 ; Assign to temp {destino_tac}")
+                        else: 
+                            destino_ptr = self._get_var_ptr(destino_tac)
+                            self.main_body_instructions.append(f"  store i32 {val_llvm_fonte}, ptr {destino_ptr}, align 4")
+                    elif len(partes) == 5: 
+                        op1_tac, op_str, op2_tac = partes[2], partes[3], partes[4]
+                        tipo_op1, val_op1 = self._load_operand(op1_tac)
+                        tipo_op2, val_op2 = self._load_operand(op2_tac)
+                        if tipo_op1 != "i32" or tipo_op2 != "i32":
+                            self.logger.error(f"Operação aritmética com tipos não-i32 ({tipo_op1}, {tipo_op2}) não suportada: {instrucao_tac}")
+                            self.erro_handler.registrar_erro("Gerador LLVM",0,0,f"Operação com tipos incompatíveis: {instrucao_tac}", "LLVM")
+                            continue
+                        llvm_op_keyword = ""
+                        if op_str == '+': llvm_op_keyword = "add nsw"
+                        elif op_str == '-': llvm_op_keyword = "sub nsw"
+                        elif op_str == '*': llvm_op_keyword = "mul nsw"
+                        elif op_str == '/': llvm_op_keyword = "sdiv"
+                        else:
+                            self.erro_handler.registrar_erro("Gerador LLVM", 0,0, f"Operador TAC '{op_str}' não suportado para LLVM.", "LLVM"); continue
+                        result_reg = f"%{destino_tac}" if destino_tac.startswith("t") else self._nova_reg()
+                        self.main_body_instructions.append(f"  {result_reg} = {llvm_op_keyword} i32 {val_op1}, {val_op2}")
+                        if not destino_tac.startswith("t"):
+                            destino_ptr = self._get_var_ptr(destino_tac)
+                            self.main_body_instructions.append(f"  store i32 {result_reg}, ptr {destino_ptr}, align 4")
+                    else:
+                        self.logger.error(f"Formato de atribuição TAC não reconhecido: {instrucao_tac}")
+                        self.erro_handler.registrar_erro("Gerador LLVM",0,0,f"Formato de atribuição TAC irreconhecível: {instrucao_tac}", "LLVM")
                 else:
-                    self.logger.warning(f"Instrução TAC não reconhecida para LLVM: '{instrucao_tac}'")
-
+                     self.logger.warning(f"Instrução TAC não reconhecida para LLVM: {instrucao_tac}")
+        
         except Exception as e:
-            self.erro_handler.registrar_erro("Gerador LLVM", 0, 0, f"Erro inesperado na geração LLVM: {e}", "LLVM")
+            self.erro_handler.registrar_erro("Gerador LLVM", 0, 0, f"Erro inesperado e crítico na geração LLVM: {e}", "LLVM")
+            self.logger.exception("Detalhes da exceção crítica na geração LLVM:")
             return None
 
-        self.codigo_llvm_linhas.append("  ret i32 0")
-        self.codigo_llvm_linhas.append("}")
-        self.codigo_llvm_linhas.append("")
+        # <<< INÍCIO DAS MODIFICAÇÕES DO CABEÇALHO >>>
+        now = datetime.datetime.now()
+        date_str = now.strftime("%d/%m/%Y")
+        time_str = now.strftime("%H:%M")
 
+        informational_header = [
+            "; Generated by the BASIQuinho compiler",
+            "; BASIQuinho Compiler: https://github.com/edwilsonferreira/BASIQuinho",
+            f"; Generated on: {date_str} at {time_str}",
+            ";",
+            "; To compile this LLVM IR code to an executable:",
+            "; 1. Ensure you have Clang installed (or an equivalent LLVM toolchain).",
+            "; 2. Run the command:",
+            ";    clang your_output_filename.ll -o your_executable_name",
+            ";",
+            "; Alternatively, using llc (LLVM static compiler) and a C linker (e.g., gcc or clang):",
+            "; 1. Generate an object file from LLVM IR:",
+            ";    llc -filetype=obj your_output_filename.ll -o your_output_filename.o",
+            "; 2. Link the object file to create an executable:",
+            ";    clang your_output_filename.o -o your_executable_name",
+            ";    (or use gcc: gcc your_output_filename.o -o your_executable_name)",
+            ";",
+            ""
+        ]
+        
+        # Configurações do módulo e declarações externas
+        module_setup = [
+            "target triple = \"x86_64-pc-linux-gnu\" ; Ajuste conforme sua plataforma alvo",
+            "",
+            "; Declaracoes de funcoes C externas para I/O",
+            "@.str.print.num.fmt = private unnamed_addr constant [4 x i8] c\"%d\\0A\\00\"", # %d\n\0
+            "@.str.print.str.fmt = private unnamed_addr constant [4 x i8] c\"%s\\0A\\00\"", # %s\n\0
+            "@.str.scan.num.fmt = private unnamed_addr constant [3 x i8] c\"%d\\00\"",   # %d\0
+            "declare i32 @printf(ptr nocapture readonly, ...) nounwind",
+            "declare i32 @scanf(ptr nocapture readonly, ...) nounwind",
+            ""
+        ]
+        # <<< FIM DAS MODIFICAÇÕES DO CABEÇALHO >>>
+        
+        define_main = [
+            "define i32 @main() {",
+            "entry:"
+        ]
+        
+        footer = [
+            "  ret i32 0",
+            "}",
+            ""
+        ]
+
+        # Monta o código LLVM final com o novo cabeçalho
+        self.codigo_llvm_linhas = (informational_header + 
+                                   module_setup + 
+                                   self.global_definitions + 
+                                   [""] +  # Linha em branco antes de 'define main' se houver globals
+                                   define_main + 
+                                   self.main_body_instructions + 
+                                   footer)
+        
         if not self.erro_handler.tem_erros_llvm:
             self.logger.info("Geração de Código LLVM IR concluída.")
             final_code = "\n".join(self.codigo_llvm_linhas)
-            self.logger.info("--- Código LLVM IR Gerado ---")
-            # self.logger.info(final_code) # Pode ser muito verboso para o log INFO
-            self.logger.info("---------------------------")
+            self.logger.info("--- Código LLVM IR Gerado (trecho inicial) ---")
+            for i, line_llvm in enumerate(self.codigo_llvm_linhas[:30]): # Loga as primeiras 30 linhas
+                 self.logger.info(line_llvm)
+            if len(self.codigo_llvm_linhas) > 30:
+                 self.logger.info("   (...)")
+            self.logger.info("------------------------------------------")
             return final_code
         else:
             self.logger.error("Geração de LLVM IR encontrou erros.")
