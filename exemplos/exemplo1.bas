@@ -1,0 +1,1 @@
+PRINT "Olá Mundo!"
