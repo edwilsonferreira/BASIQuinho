@@ -1,8 +1,6 @@
 grammar BASIQuinho;
 
 // Ponto de entrada da gramática
-// Permite NEWLINEs opcionais no início, entre statements, e no final.
-// Requer pelo menos um statement real devido ao '+' em (NEWLINE* stmt)+.
 prog: (NEWLINE* stmt)+ NEWLINE* EOF;
 
 // Declarações (comandos)
@@ -11,46 +9,33 @@ stmt: inputStmt  # InputStatement
     | letStmt    # LetStatement
     ;
 
-// Comando INPUT (Simplificado)
-// Ex: INPUT idadeVar
+// Comandos
 inputStmt: INPUT ID NEWLINE;
-
-// Comando PRINT
-// Ex: PRINT "Olá, ", nomeVar, "!"
-// Ex: PRINT "O resultado é:", resultado
-// Ex: PRINT valor
 printStmt: PRINT exprList NEWLINE;
-
-// Comando LET (atribuição)
-// Ex: LET a = 10
-// Ex: LET nome = "Fulano"
-// Ex: LET resultado = a + b * 2
 letStmt: LET ID '=' expr NEWLINE;
-
-// Lista de expressões para o PRINT
 exprList: expr (',' expr)*;
-
-// Expressões (sem labels problemáticas como #AddSub ou #JustTerm aqui)
 expr: term (('+' | '-') term)* ;
-
-// Termos (sem labels problemáticas como #MulDiv ou #JustFactor aqui)
 term: factor (('*' | '/') factor)* ;
-
-// Fatores (Labels aqui estão OK e são a melhor prática para alternativas)
 factor: NUMBER                     # Number
       | STRING                     # String
       | ID                         # Variable
       | '(' expr ')'               # Parentheses
       ;
 
-// Tokens (Lexer)
+// Tokens (Lexer) - A ORDEM IMPORTA!
+// Regras de Skip devem vir primeiro ou ter alta prioridade implícita.
+WS: [ \t]+ -> skip;
+LINE_COMMENT: 'REM' ~[\r\n]* -> skip; // << COMENTÁRIO REM IGNORADO
+
+// Palavras-chave explícitas
 INPUT: 'INPUT';
 PRINT: 'PRINT';
 LET: 'LET';
+// Não precisamos de um token REM separado se ele só introduz comentários skippados
 
-ID: [a-zA-Z_] [a-zA-Z0-9_]*; // Identificador de variável
-NUMBER: [0-9]+ ('.' [0-9]+)?; // Números inteiros ou de ponto flutuante simples
-STRING: '"' (~["\r\n])*? '"'; // Strings delimitadas por aspas duplas
+// Tokens gerais (ID deve vir depois de palavras-chave e padrões mais específicos)
+ID: [a-zA-Z_] [a-zA-Z0-9_]*;
+NUMBER: [0-9]+ ('.' [0-9]+)?;
+STRING: '"' (~["\r\n"])*? '"';
 
-NEWLINE: '\r'? '\n' | ';'; // Fim de linha ou ponto e vírgula como terminador de comando
-WS: [ \t]+ -> skip; // Espaços em branco e tabulações são ignorados
+NEWLINE: '\r'? '\n' | ';';
