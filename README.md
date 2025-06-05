@@ -134,8 +134,8 @@ O ANTLR4 (ANother Tool for Language Recognition) é uma ferramenta poderosa usad
 TAC:
   t0 := A + B
   t1 := t0 * C
-  RESULT := t1```
-
+  RESULT := t1
+```
 
 ## 11. geracao_llvm.py
 
@@ -143,6 +143,6 @@ TAC:
 **Responsabilidade:**
 - Recebe o Código de Três Endereços (TAC).
 - Traduz as instruções TAC para LLVM IR. LLVM é uma infraestrutura de compilador que oferece otimizações e pode gerar código para diversas arquiteturas de hardware.
-- Lida com a alocação de variáveis na stack, representação de literais, mapeamento de operações TAC para instruções LLVM, e chamadas a funções externas (como printf para o comando ```PRINT``` e scanf para ```INPUT`).
-`- Gera um arquivo de texto .ll contendo o código LLVM IR.
+- Lida com a alocação de variáveis na stack, representação de literais, mapeamento de operações TAC para instruções LLVM, e chamadas a funções externas (como printf para o comando ```PRINT``` e scanf para ```INPUT```).
+- Gera um arquivo de texto .ll contendo o código LLVM IR.
 - Configuração e Instalação
