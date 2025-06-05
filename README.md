@@ -35,12 +35,12 @@ O compilador BASIQuinho segue as fases tradicionais de um compilador:
 
 ```mermaid
 graph LR
-    A[Código Fonte BASIQuinho (.bas)] --> B(Análise Léxica);
+    A[Código Fonte BASIQuinho] --> B(Análise Léxica);
     B --> C(Análise Sintática);
     C --> D(Análise Semântica);
     D --> E(Geração de Código Intermediário - TAC);
     E --> F(Geração de Código Final - LLVM IR);
-    F --> G[Código LLVM IR (.ll)];
+    F --> G[Código LLVM IR];
     G -- clang --> H[Código Executável];
 ```
 
@@ -56,19 +56,6 @@ Responsabilidade: Define as regras léxicas (tokens como palavras-chave, identif
 
 O ANTLR4 (ANother Tool for Language Recognition) é uma ferramenta poderosa usada para gerar o analisador léxico (lexer) e o analisador sintático (parser) a partir do arquivo de gramática BASIQuinho.g4.
 
-```graph LR
-    A[1. Gramática BASIQuinho.g4] -- Executar ANTLR4 Tool --> B{2. Ferramenta ANTLR4};
-    B -- Gera --> C[BASIQuinhoLexer.py];
-    B -- Gera --> D[BASIQuinhoParser.py];
-    B -- Gera --> E[BASIQuinhoListener.py];
-    subgraph Compilador BASIQuinho (Python)
-        F[Código Fonte .bas] --> G[main.py / compilador.py];
-        G -- Utiliza --> C;
-        G -- Utiliza --> D;
-        G -- Utiliza / Estende --> E;
-        D -- Constrói --> H[Árvore Sintática (Parse Tree)];
-    end
-```
 **Arquivos Gerados pelo ANTLR4:**
 ```BASIQuinhoLexer.py```: Contém a classe BASIQuinhoLexer, responsável por quebrar o código fonte em uma sequência de tokens.
 ```BASIQuinhoParser.py```: Contém a classe BASIQuinhoParser, responsável por verificar se a sequência de tokens forma uma estrutura sintática válida e por construir a Árvore Sintática (Parse Tree).
