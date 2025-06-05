@@ -14,13 +14,13 @@ Link do Repositório: [Github](https://github.com/edwilsonferreira/BASIQuinho)
 
 ## 📋 Tabela de Conteúdos
 
-[✨ 1 Funcionalidades da Linguagem BASIQuinho](#1)
-[🏗️ 2 Arquitetura do Compilador](#2)
-[🧩 3 Estrutura do Projeto e Módulos](#3)
-[🛠️ 4 Configuração e Instalação](#4)
-[▶️ 5 Como Executar o Compilador](#5)
-[⚙️ 6 Compilando e Executando o Código Gerado](#6)
-[📂 7 Exemplos](#7)
+[✨ 1 Funcionalidades da Linguagem BASIQuinho](#1)  
+[🏗️ 2 Arquitetura do Compilador](#2)  
+[🧩 3 Estrutura do Projeto e Módulos](#3)  
+[🛠️ 4 Configuração e Instalação](#4)  
+[▶️ 5 Como Executar o Compilador](#5)  
+[⚙️ 6 Compilando e Executando o Código Gerado](#6)  
+[📂 7 Exemplos](#7)  
 
 ---
 
