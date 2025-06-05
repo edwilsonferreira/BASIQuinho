@@ -1,6 +1,6 @@
 # README
 
-**Nota:** A estrutura e o conteúdo deste arquivo README.md foram elaborados com o auxílio de uma Inteligência Artificial para garantir clareza, completude e conformidade com as melhores práticas de documentação.
+**Nota:** A estrutura e o conteúdo deste arquivo README.md foram elaborados com o auxílio de uma Inteligência Artificial.
 
 ---
 
@@ -335,3 +335,5 @@ Execute o programa:
 O diretório ```exemplos/``` contém arquivos de código BASIQuinho para teste. O ```exemplo3.bas``` é o mais completo e recomendado para um teste geral de funcionalidades.
 
 ---
+👨‍💻 Autor Prof. Dr. Ed Wilson Tavares Ferreira
+GitHub: [edwilsonferreira](https://github.com/edwilsonferreira/BASIQuinho)
