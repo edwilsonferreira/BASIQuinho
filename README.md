@@ -197,6 +197,83 @@ classDiagram
     geracao_tac_obj ..> erro_handler_obj : "ref"
     geracao_llvm_obj ..> erro_handler_obj : "ref"
 ```
+
+**Diagrama de Sequência para o Processo de Compilação**
+
+Este diagrama ilustra a sequência de chamadas de método que ocorrem quando ```main.py``` é executado. Ele mostra o objeto ```Compilador``` chamando cada fase em ordem e o fluxo de dados (```stream de tokens```, ```AST````).
+
+Explicação do Diagrama de Sequência:
+
+* Participantes (```Lifelines```): As colunas verticais representam os objetos que participam da interação (```Usuário```, ```main.py```, ```compilador_obj```, e os objetos de cada fase).
+Mensagens (```Setas```):
+* As setas cheias (```->>```) representam chamadas de método síncronas (a execução espera a chamada terminar).
+* As setas pontilhadas (```-->>```) representam os valores de retorno.
+* Ativação (```Barras Verticais```): As barras retangulares nas linhas de vida indicam que um objeto está "ativo", ou seja, executando um método.
+* Bloco ```alt```: Representa um fluxo alternativo. Neste caso, ele mostra a lógica principal do seu compilador: se uma fase crucial (```léxica```, ```sintática```, ```semântica```) falhar, o processo é interrompido; caso contrário (else), ele continua para a próxima fase.
+
+
+
+```mermaid
+sequenceDiagram
+    actor Usuário
+    participant main as "main.py"
+    participant comp as "comp: Compilador"
+    participant lex as "lex: AnáliseLexica"
+    participant sin as "sin: AnáliseSintática"
+    participant sem as "sem: AnáliseSemântica"
+    participant tac as "tac: GeraçãoTAC"
+    participant llvm as "llvm: GeraçãoLLVM"
+
+    Usuário->>main: python3 main.py exemplo.bas
+    activate main
+
+    main->>comp: Compilador(arquivo_fonte)
+    activate comp
+    note over comp: Fases são instanciadas (AnáliseLexica, etc.)
+
+    main->>comp: compilar()
+
+    comp->>lex: executarAnaliseLexica()
+    activate lex
+    lex-->>comp: tokens, token_stream
+    deactivate lex
+
+    alt Se houver erro léxico
+        comp-->>main: Retorna Falha
+    else Sem Erro
+        comp->>sin: executarAnaliseSintatica(token_stream)
+        activate sin
+        sin-->>comp: ast
+        deactivate sin
+
+        alt Se houver erro sintático
+             comp-->>main: Retorna Falha
+        else Sem Erro
+            comp->>sem: executarAnaliseSemantica(ast)
+            activate sem
+            sem-->>comp: ast_anotada
+            deactivate sem
+
+            alt Se houver erro semântico
+                 comp-->>main: Retorna Falha
+            else Sem Erro
+                comp->>tac: gerarCodigoTAC(ast_anotada)
+                activate tac
+                tac-->>comp: codigo_tac
+                deactivate tac
+
+                comp->>llvm: gerarCodigoLLVM(codigo_tac)
+                activate llvm
+                llvm-->>comp: codigo_llvm
+                deactivate llvm
+            end
+        end
+    end
+
+    comp-->>main: Retorna Sucesso/Falha
+    deactivate comp
+    deactivate main
+```
 ---
 
 <a id="3"></a>
