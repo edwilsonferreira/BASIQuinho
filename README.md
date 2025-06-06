@@ -1,4 +1,4 @@
-# README
+# README.md
 
 **Nota:** A estrutura e o conteúdo deste arquivo README.md foram elaborados com o auxílio de uma Inteligência Artificial.
 
@@ -54,6 +54,7 @@ O BASIQuinho atualmente suporta os seguintes comandos e construções:
 
 O compilador BASIQuinho segue as fases tradicionais de um compilador, transformando o código de alto nível em um executável.
 
+**Visão Geral**
 ```mermaid
 graph LR
     A([<B>Código Fonte BASIQuinho</B>]) --> B(Análise Léxica);
@@ -69,6 +70,133 @@ graph LR
     style H fill:#FADBD8,stroke:#E74C3C
 ```
 
+**Diagrama de Classes**
+
+Este diagrama mostra as principais classes do projeto e seus relacionamentos, como herança e associação. Ele descreve a arquitetura estática do compilador.
+
+* A classe ```Compilador``` atua como o orquestrador central, compondo (relação "tem um") instâncias de cada fase da compilação.
+* Cada fase usa uma referência à instância única da classe ```Erro``` para reportar problemas de forma centralizada.
+As classes ```CustomErrorListener``` e ```BASIQuinhoSemanticoListenerImpl``` herdam de classes base geradas pelo ```ANTLR4``` para estender sua funcionalidade.
+
+```mermaid
+classDiagram
+    direction TB
+
+    class Compilador {
+        +nome_arquivo_fonte: str
+        +compilar()
+    }
+
+    class Erro {
+        +tem_erros_lexicos: bool
+        +tem_erros_sintaticos: bool
+        +tem_erros_semanticos: bool
+        +registrar_erro()
+        +houve_erro_fatal()
+    }
+
+    class AnaliseLexica {
+        +executarAnaliseLexica()
+    }
+
+    class AnaliseSintatica {
+        +executarAnaliseSintatica()
+        +exportarAST_DOT()
+        +exportarAST_SVG()
+    }
+
+    class AnaliseSemantica {
+        +executarAnaliseSemantica()
+    }
+
+    class GeracaoTAC {
+        +gerarCodigoTAC()
+    }
+
+    class GeracaoLLVM {
+        +gerarCodigoLLVM()
+    }
+
+    class ANTLRErrorListener~Gerada~ {
+        <<Interface>>
+    }
+
+    class BASIQuinhoListener~Gerada~ {
+        <<Interface>>
+    }
+
+    class CustomErrorListener {
+        +syntaxError()
+    }
+
+    class BASIQuinhoSemanticoListenerImpl {
+        +exitLetStatement()
+        +exitPrintStatement()
+        +exitInputStatement()
+        +exitExpr()
+    }
+
+    Compilador *-- "1" Erro : "possui"
+    Compilador *-- "1" AnaliseLexica : "possui"
+    Compilador *-- "1" AnaliseSintatica : "possui"
+    Compilador *-- "1" AnaliseSemantica : "possui"
+    Compilador *-- "1" GeracaoTAC : "possui"
+    Compilador *-- "1" GeracaoLLVM : "possui"
+
+    AnaliseLexica ..> Erro : "usa"
+    AnaliseSintatica ..> Erro : "usa"
+    AnaliseSemantica ..> Erro : "usa"
+    GeracaoTAC ..> Erro : "usa"
+    GeracaoLLVM ..> Erro : "usa"
+
+    ANTLRErrorListener <|-- CustomErrorListener
+    BASIQuinhoListener <|-- BASIQuinhoSemanticoListenerImpl
+
+    CustomErrorListener ..> Erro : "usa"
+    BASIQuinhoSemanticoListenerImpl ..> Erro : "usa"
+
+    AnaliseSemantica ..> BASIQuinhoSemanticoListenerImpl : "cria/usa"
+    AnaliseSintatica ..> CustomErrorListener : "cria/usa"
+    AnaliseLexica ..> CustomErrorListener : "cria/usa"
+```
+
+
+**Diagrama de Objetos**
+Este diagrama é uma "fotografia" do sistema durante a execução. Ele mostra as instâncias específicas das classes (os objetos) e como elas estão conectadas.
+
+* O objeto ```compilador_obj``` é a instância principal criada em ```main.py```.
+* Ele cria e "possui" um objeto para cada fase (ex: ```analise_lex_obj```, ```analise_sin_obj```) e um único ```erro_handler_obj```.
+* Todos os objetos de fase mantêm uma referência (link) para o mesmo ```erro_handler_obj```, garantindo que todos os erros sejam reportados de forma unificada.    
+
+```mermaid
+classDiagram
+    direction TB
+
+    title Diagrama de Objetos em Execucao
+
+    compilador_obj: Compilador
+    
+    analise_lex_obj: AnaliseLexica
+    analise_sin_obj: AnaliseSintatica
+    analise_sem_obj: AnaliseSemantica
+    geracao_tac_obj: GeracaoTAC
+    geracao_llvm_obj: GeracaoLLVM
+    
+    erro_handler_obj: Erro
+
+    compilador_obj --* erro_handler_obj
+    compilador_obj --* analise_lex_obj
+    compilador_obj --* analise_sin_obj
+    compilador_obj --* analise_sem_obj
+    compilador_obj --* geracao_tac_obj
+    compilador_obj --* geracao_llvm_obj
+
+    analise_lex_obj ..> erro_handler_obj : "ref"
+    analise_sin_obj ..> erro_handler_obj : "ref"
+    analise_sem_obj ..> erro_handler_obj : "ref"
+    geracao_tac_obj ..> erro_handler_obj : "ref"
+    geracao_llvm_obj ..> erro_handler_obj : "ref"
+```
 ---
 
 <a id="3"></a>
