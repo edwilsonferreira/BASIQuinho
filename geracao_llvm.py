@@ -36,8 +36,8 @@ class GeracaoLLVM:
             
             type_to_alloca = llvm_type
             align = 4
-            if llvm_type == "ptr": # Se a variável vai guardar um ponteiro (para string)
-                type_to_alloca = "ptr" # aloca um ponteiro para char (i8*)
+            if llvm_type == "i8*": # Se a variável vai guardar um ponteiro (para string)
+                type_to_alloca = "i8*" # aloca um ponteiro para char (i8*)
                 align = 8 # Ponteiros são geralmente alinhados a 8 em 64-bit
             
             return f"  {ptr_reg} = alloca {type_to_alloca}, align {align} ; Var {var_name_basiquinho} (tipo {type_to_alloca})"
@@ -91,9 +91,9 @@ class GeracaoLLVM:
             gep_reg = self._nova_reg()
             num_bytes = len(str_content.encode('utf-8')) + 1
             # GEP é uma instrução, vai para o corpo da main
-            self.main_body_instructions.append(f"  {gep_reg} = getelementptr inbounds [{num_bytes} x i8], ptr {global_str_label}, i64 0, i64 0")
+            self.main_body_instructions.append(f"  {gep_reg} = getelementptr inbounds [{num_bytes} x i8], [{num_bytes} x i8]* {global_str_label}, i64 0, i64 0")
             self.logger.debug(f"LLVM_LOAD_OP: É string literal, GEP reg: {gep_reg} para {global_str_label}")
-            return "ptr", gep_reg
+            return "i8*", gep_reg
 
         elif operand_tac.startswith("t"): 
             # Assume que temporárias tX já são resultados de i32 (ou ponteiros se de GEP)
@@ -120,7 +120,7 @@ class GeracaoLLVM:
             
             loaded_val_reg = self._nova_reg()
             # Assume que todas as variáveis BASIQuinho que são lidas são i32 por enquanto
-            self.main_body_instructions.append(f"  {loaded_val_reg} = load i32, ptr {var_ptr}, align 4")
+            self.main_body_instructions.append(f"  {loaded_val_reg} = load i32, i32* {var_ptr}, align 4")
             self.logger.debug(f"LLVM_LOAD_OP: É variável i32 '{operand_tac}', carregada em {loaded_val_reg} de {var_ptr}")
             return "i32", loaded_val_reg
 
@@ -175,19 +175,19 @@ class GeracaoLLVM:
 
                     self.main_body_instructions.append(f"  ; TAC: INPUT {var_nome_basiquinho}")
                     scan_call_reg = self._nova_reg()
-                    self.main_body_instructions.append(f"  {scan_call_reg} = call i32 (ptr, ...) @scanf(ptr @.str.scan.num.fmt, ptr {var_ptr})")
+                    self.main_body_instructions.append(f"  {scan_call_reg} = call i32 (i8*, ...) @scanf(i8* getelementptr inbounds ([3 x i8], [3 x i8]* @.str.scan.num.fmt, i64 0, i64 0), i32* {var_ptr})")
 
                 elif comando_ou_destino == "PRINT":
                     val_tac_print = partes_rhs[0]
                     self.main_body_instructions.append(f"  ; TAC: PRINT {val_tac_print}")
                     tipo_llvm_op, val_llvm_op = self._load_operand(val_tac_print)
 
-                    if tipo_llvm_op == "ptr":
+                    if tipo_llvm_op == "i8*":
                         print_call_reg = self._nova_reg()
-                        self.main_body_instructions.append(f"  {print_call_reg} = call i32 (ptr, ...) @printf(ptr @.str.print.str.fmt, ptr {val_llvm_op})")
+                        self.main_body_instructions.append(f"  {print_call_reg} = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([4 x i8], [4 x i8]* @.str.print.str.fmt, i64 0, i64 0), i8* {val_llvm_op})")
                     elif tipo_llvm_op == "i32":
                         print_call_reg = self._nova_reg()
-                        self.main_body_instructions.append(f"  {print_call_reg} = call i32 (ptr, ...) @printf(ptr @.str.print.num.fmt, i32 {val_llvm_op})")
+                        self.main_body_instructions.append(f"  {print_call_reg} = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([4 x i8], [4 x i8]* @.str.print.num.fmt, i64 0, i64 0), i32 {val_llvm_op})")
                     else:
                         self.logger.error(f"Tipo de operando desconhecido para PRINT LLVM: {tipo_llvm_op} para valor '{val_tac_print}'")
                         self.erro_handler.registrar_erro("Gerador LLVM",0,0,f"Tipo inválido para PRINT: {tipo_llvm_op}", "LLVM")
@@ -229,7 +229,7 @@ class GeracaoLLVM:
                             if not alloc_instr.startswith("%ptr"): 
                                 if alloc_instr not in alloc_instructions: alloc_instructions.append(alloc_instr)
                             destino_ptr = self.var_map[destino_tac]["ptr_llvm"]
-                            self.main_body_instructions.append(f"  store i32 {result_reg}, ptr {destino_ptr}, align 4")
+                            self.main_body_instructions.append(f"  store i32 {result_reg}, i32* {destino_ptr}, align 4")
                     
                     else: # Atribuição simples: destino_tac := fonte_unica_tac (onde fonte_unica_tac é expressao_direita_str)
                         fonte_tac = expressao_direita_str
@@ -238,21 +238,21 @@ class GeracaoLLVM:
                         if destino_tac.startswith("t"): # Destino é temporária tX
                             if tipo_llvm_fonte == "i32":
                                 self.main_body_instructions.append(f"  %{destino_tac} = add i32 {val_llvm_fonte}, 0 ; Assign i32 to temp {destino_tac}")
-                            elif tipo_llvm_fonte == "ptr": # Ex: t0 := GEP_para_string
-                                self.main_body_instructions.append(f"  %{destino_tac} = bitcast ptr {val_llvm_fonte} to ptr ; Assign ptr to temp {destino_tac}")
+                            elif tipo_llvm_fonte == "i8*": # Ex: t0 := GEP_para_string
+                                self.main_body_instructions.append(f"  %{destino_tac} = bitcast i8* {val_llvm_fonte} to i8* ; Assign i8* to temp {destino_tac}")
                             else:
                                 self.logger.error(f"Atribuição para temporária de tipo desconhecido {tipo_llvm_fonte} para temp {destino_tac}")
                         else: # Destino é variável BASIQuinho
-                            var_type_to_alloca = "i32" if tipo_llvm_fonte == "i32" else "ptr"
+                            var_type_to_alloca = "i32" if tipo_llvm_fonte == "i32" else "i8*"
                             alloc_instr = self._get_var_alloc_instruction(destino_tac, var_type_to_alloca)
                             if not alloc_instr.startswith("%ptr"):
                                  if alloc_instr not in alloc_instructions: alloc_instructions.append(alloc_instr)
                             destino_ptr = self.var_map[destino_tac]["ptr_llvm"]
 
                             if self.var_map[destino_tac]["llvm_type_pointed_to"] == "i32" and tipo_llvm_fonte == "i32":
-                                self.main_body_instructions.append(f"  store i32 {val_llvm_fonte}, ptr {destino_ptr}, align 4")
-                            elif self.var_map[destino_tac]["llvm_type_pointed_to"] == "ptr" and tipo_llvm_fonte == "ptr":
-                                self.main_body_instructions.append(f"  store ptr {val_llvm_fonte}, ptr {destino_ptr}, align 8")
+                                self.main_body_instructions.append(f"  store i32 {val_llvm_fonte}, i32* {destino_ptr}, align 4")
+                            elif self.var_map[destino_tac]["llvm_type_pointed_to"] == "i8*" and tipo_llvm_fonte == "i8*":
+                                self.main_body_instructions.append(f"  store i8* {val_llvm_fonte}, i8** {destino_ptr}, align 8")
                             else:
                                 self.logger.error(f"LLVM TYPE MISMATCH: Tentando armazenar {tipo_llvm_fonte} (valor: {val_llvm_fonte}) em variável '{destino_tac}' alocada como {self.var_map[destino_tac]['llvm_type_pointed_to']}*. TAC: {instrucao_tac}")
                                 self.erro_handler.registrar_erro("Gerador LLVM",0,0,f"Type mismatch no store para var '{destino_tac}'.", "LLVM")
@@ -291,8 +291,8 @@ class GeracaoLLVM:
             "@.str.print.num.fmt = private unnamed_addr constant [4 x i8] c\"%d\\0A\\00\"",
             "@.str.print.str.fmt = private unnamed_addr constant [4 x i8] c\"%s\\0A\\00\"",
             "@.str.scan.num.fmt = private unnamed_addr constant [3 x i8] c\"%d\\00\"",
-            "declare i32 @printf(ptr nocapture readonly, ...) nounwind",
-            "declare i32 @scanf(ptr nocapture readonly, ...) nounwind",""
+            "declare i32 @printf(i8* nocapture readonly, ...) nounwind",
+            "declare i32 @scanf(i8* nocapture readonly, ...) nounwind",""
         ]
         define_main = ["define i32 @main() {","entry:"]
         footer = ["  ret i32 0","}",""]
