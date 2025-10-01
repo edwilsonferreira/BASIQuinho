@@ -41,7 +41,9 @@ class AnaliseSintatica:
         if hasattr(no, 'getRuleIndex'): # É um nó de regra
             label = parser_rules[no.getRuleIndex()]
         elif hasattr(no, 'symbol'): # É um nó terminal (token)
-            label = f"{no.getText().replace('"', '\\"')}\\n<Token: {BASIQuinhoParser.symbolicNames[no.symbol.type]}>"
+            texto_escapado = no.getText().replace('"', '\\"')
+            token_name = BASIQuinhoParser.symbolicNames[no.symbol.type]
+            label = f"{texto_escapado}\\n<Token: {token_name}>"
         else: # Outro tipo de nó (ex: ErrorNode)
             label = str(no.getText()).replace('"', '\\"')
 
